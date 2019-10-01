@@ -3,7 +3,7 @@
 import numpy as np
 import cv2
 
-inputImage = cv2.resize((cv2.imread('crack.jpg')), (800,800))
+inputImage = cv2.resize((cv2.imread('crack.jpg')), (800,800))[150:740, 80:760]
 
 #inputImage = cv2.imread('line2.jpg')
 
@@ -13,8 +13,8 @@ edges = cv2.Canny(inputImageGray,100,200,apertureSize = 3)
 
 #edges = edgesOriginal[150:740, 80:760]
 
-minLineLength = 500
-maxLineGap = 0
+minLineLength = 1
+maxLineGap = 1
 
 lines = cv2.HoughLinesP(edges,1,np.pi/180,90,minLineLength,maxLineGap)
 
@@ -24,6 +24,7 @@ for x in range(0, len(lines)):
 
 #cv2.putText(inputImage,"Cracks detected", (500,250), font, 0.5, 255)
 
+cv2.imshow("Test", edges)
 cv2.imshow("Result", inputImage)
 
 cv2.waitKey(0)
