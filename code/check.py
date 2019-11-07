@@ -153,9 +153,10 @@ if input_img is not None:
 		k = cv2.waitKey(wait_time)
 		if k == esc_keycode:
                     cv2.imwrite("file.jpg", crop_img)
-                    image("file.jpg")
+                    #image("file.jpg")
                     #pixels("file.jpg")
                     #display()
+
                     cv2.destroyAllWindows()
                     break
 

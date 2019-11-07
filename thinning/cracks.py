@@ -11,14 +11,14 @@ matplotlib.rc('ytick', labelsize=7)
 import glob
 
 import skimage.io
-from skimage import filter
+from skimage import filters
 from skimage.transform import hough_circle
 from skimage.feature import peak_local_max
 from skimage.draw import circle_perimeter
 
 
 # Load the first picture and detect the drop edge
-image = skimage.io.imread('data/im00070.png', as_grey=True)
+image = skimage.io.imread('line.png', as_grey=True)
 edges = filter.canny(image, sigma=2.0)
 
 # Hough transform
