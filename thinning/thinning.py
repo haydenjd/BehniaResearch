@@ -8,8 +8,8 @@ import cv2
 image1 = cv2.resize(cv2.imread('crack1.jpg'), (800,800))
 
 # Invert the horse image
-#image = invert(data.horse())
-image = invert(image1)
+image = invert(data.horse())
+#image = invert(image1)
 
 # perform skeletonization
 skeleton = skeletonize(image)
