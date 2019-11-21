@@ -29,8 +29,14 @@ def thinning(name):
     #cv2.destroyAllWindows()
 
 def thinning2(name):
+    #cv2.imwrite("file3.jpg", cv2.resize("file1.jpg", (1500,1500)))
+
     image = img_as_float(color.rgb2gray(io.imread(name)))
+    #plt.imshow(image)
+    #plt.show()
     image_binary = image < 0.5
+    #plt.imshow(image_binary)
+    #plt.show()
     out_skeletonize = morphology.skeletonize(image_binary)
     out_thin = morphology.thin(image_binary)
     
@@ -51,6 +57,17 @@ def thinning2(name):
     #plt.savefig('newFIg.jpg')
     #plt.show()
 
+def binary(binaryFile):
+    img = cv2.imread(binaryFile,0)
+    img = cv2.medianBlur(img,5)
+    ret,th1 = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
+    th2 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_MEAN_C,\
+                cv2.THRESH_BINARY,11,2)
+    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
+                cv2.THRESH_BINARY,11,2)
+    cv2.imwrite("binary.jpg", th3)
+    plt.imshow(th3,'gray')
+    plt.show()
 
 def select(file1):
     image = cv2.imread('file1.jpg')
@@ -76,10 +93,14 @@ def select(file1):
     cv2.imwrite('image.png', image)
     cv2.waitKey(0)
 
+def enlarge(fileName):
+    img = cv2.imread(fileName)
+    cv2.imwrite("file3.jpg", cv2.resize(img, (1200,1200)))
+
 #############################################MAIN####################################################
 #image = cv2.resize((cv2.imread('crack1.jpg')), (1200,1200))
 img = cv2.imread('crack1.jpg')
-cv2.imwrite("file2.jpg", cv2.resize(img, (1000,1000)))
+cv2.imwrite("file2.jpg", cv2.resize(img, (800,800)))
 filename = 'file2.jpg'
 selection = False
 roi = []
@@ -139,12 +160,17 @@ if input_img is not None:
                 k = cv2.waitKey(wait_time)
                 if k == esc_keycode:
                     cv2.imwrite("file1.jpg", crop_img)
+                    enlarge("file1.jpg")
+                    #img = cv2.imread("file1.jpg")
+                    #cv2.imwrite("file3.jpg", cv2.resize("file1.jpg", (1500,1500)))
+                    
                     #image("file.jpg")
                     #pixels("file.jpg")
                     #display()
-                    select("file1.jpg")
+                    select("file3.jpg")
+                    binary("file3.jpg")
                     #thinning("file1.jpg")
-                    thinning2("file1.jpg")
+                    thinning2("binary.jpg")
                     cv2.destroyAllWindows()
                     break
 
