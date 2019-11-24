@@ -1,3 +1,4 @@
+import scipy.ndimage.morphology as m
 import cv2
 import numpy as np
 from skimage import img_as_float
@@ -29,33 +30,13 @@ def thinning(name):
     #cv2.destroyAllWindows()
 
 def thinning2(name):
-    #cv2.imwrite("file3.jpg", cv2.resize("file1.jpg", (1500,1500)))
-
     image = img_as_float(color.rgb2gray(io.imread(name)))
-    #plt.imshow(image)
-    #plt.show()
     image_binary = image < 0.5
-    #plt.imshow(image_binary)
-    #plt.show()
     out_skeletonize = morphology.skeletonize(image_binary)
     out_thin = morphology.thin(image_binary)
     
-    #f, (ax0, ax1, ax2) = plt.subplots(1, 3, figsize=(10, 3))
-    
     plt.imshow(out_skeletonize, cmap='gray')
     plt.show()
-
-    #ax0.imshow(image, cmap='gray')
-    #ax0.set_title('Input')
-    #
-    #ax1.imshow(out_skeletonize, cmap='gray')
-    #ax1.set_title('Skeletonize')
-    #
-    #ax2.imshow(out_thin, cmap='gray')
-    #ax2.set_title('Thin')
-    #
-    #plt.savefig('newFIg.jpg')
-    #plt.show()
 
 def binary(binaryFile):
     img = cv2.imread(binaryFile,0)
@@ -95,7 +76,42 @@ def select(file1):
 
 def enlarge(fileName):
     img = cv2.imread(fileName)
-    cv2.imwrite("file3.jpg", cv2.resize(img, (1200,1200)))
+    cv2.imwrite("file3.jpg", cv2.resize(img, (800,800)))
+
+def dilate(fileName):
+    img = cv2.imread(fileName)
+    kernel = np.ones((5,5), np.uint8)
+    dilation = cv2.dilate(img,kernel,iterations = 1)
+    cv2.imshow("dilation",dilation)
+
+def erode(fileName):
+    img = cv2.imread(fileName,0)
+    kernel = np.ones((5,5),np.uint8)
+    erosion = cv2.erode(img,kernel,iterations = 1)
+    cv2.imshow("erosion",erosion)
+    cv2.imwrite("erosion.jpg",erosion)
+
+def skeletonize(img):
+    h1 = np.array([[0, 0, 0],[0, 1, 0],[1, 1, 1]])
+    m1 = np.array([[1, 1, 1],[0, 0, 0],[0, 0, 0]])
+    h2 = np.array([[0, 0, 0],[1, 1, 0],[0, 1, 0]])
+    m2 = np.array([[0, 1, 1],[0, 0, 1],[0, 0, 0]])
+    hit_list = []
+    miss_list = []
+    for k in range(4):
+        hit_list.append(np.rot90(h1, k))
+        hit_list.append(np.rot90(h2, k))
+        miss_list.append(np.rot90(m1, k))
+        miss_list.append(np.rot90(m2, k))
+    img = img.copy()
+    while True:
+        last = img
+        for hit, miss in zip(hit_list, miss_list):
+            hm = m.binary_hit_or_miss(img, hit, miss)
+            img = np.logical_and(img, np.logical_not(hm))
+        if np.all(img == last):
+            break
+    return img
 
 #############################################MAIN####################################################
 #image = cv2.resize((cv2.imread('crack1.jpg')), (1200,1200))
@@ -167,10 +183,25 @@ if input_img is not None:
                     #image("file.jpg")
                     #pixels("file.jpg")
                     #display()
-                    select("file3.jpg")
+
+                    #select("file3.jpg")
+                    erode("file3.jpg")
                     binary("file3.jpg")
                     #thinning("file1.jpg")
+                    erode("binary.jpg")
                     thinning2("binary.jpg")
+                    ###
+                    img = cv2.imread("erosion.jpg",0)
+                    ret,img = cv2.threshold(img,127,255,0)
+                    element = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
+                    img = 255 - img
+                    img = cv2.dilate(img, element, iterations=3)
+                    
+                    skel = skeletonize(img)
+                    #plt.imshow(skel, cmap="gray", interpolation="nearest")
+                    #plt.show()
+
+                    ###
                     cv2.destroyAllWindows()
                     break
 
