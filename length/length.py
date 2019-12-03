@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
+
+#Function to calculate the length
 def getLength(img):
     im = Image.open(img)   
     out = Image.new('I', im.size, 0xffffff)
