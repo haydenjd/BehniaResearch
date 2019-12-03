@@ -1,3 +1,5 @@
+#Test File
+
 import scipy.ndimage.morphology as m
 import cv2
 import numpy as np
@@ -91,6 +93,29 @@ def erode(fileName):
     cv2.imshow("erosion",erosion)
     cv2.imwrite("erosion.jpg",erosion)
 
+def skel(img):
+    # load the image, convert it to grayscale, and blur it slightly
+    image = cv2.imread(img)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    
+    #apply Canny edge detection
+    canny_img = cv2.Canny(blurred, 150, 200)
+    
+    #apply Distance Transform
+    invert_canny= 255- canny_img
+    dist_trans= cv2.distanceTransform(invert_canny, cv2.DIST_L2, 3)
+    
+    #normalize to visualize dist-transformed img
+    cv2.normalize(dist_trans, dist_trans, 0.0, 1.0, cv2.NORM_MINMAX)
+    
+    # apply dilation
+    kernel=np.ones((5,5), np.uint8)
+    dilate=cv2.dilate(dist_trans,kernel, iterations=1)
+
+    cv2.imshow("dilate",dilate)
+    cv2.waitKey(0)
+
 def skeletonize(img):
     h1 = np.array([[0, 0, 0],[0, 1, 0],[1, 1, 1]])
     m1 = np.array([[1, 1, 1],[0, 0, 0],[0, 0, 0]])
@@ -113,9 +138,27 @@ def skeletonize(img):
             break
     return img
 
-#############################################MAIN####################################################
-#image = cv2.resize((cv2.imread('crack1.jpg')), (1200,1200))
-img = cv2.imread('crack1.jpg')
+def skeletonize2(img):
+
+    #img = img.copy() # don't clobber original
+    skel = cv2.imread(img) #= img.copy()
+
+    skel[:,:] = 0
+    kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3,3))
+
+    while True:
+        eroded = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
+        temp = cv2.morphologyEx(eroded, cv2.MORPH_DILATE, kernel)
+        temp  = cv2.subtract(img, temp)
+        skel = cv2.bitwise_or(skel, temp)
+        img[:,:] = eroded[:,:]
+        if cv2.countNonZero(img) == 0:
+            break
+    
+    return skel
+
+#############################################MAIN###################################
+img = cv2.imread('blackwhite.jpg')
 cv2.imwrite("file2.jpg", cv2.resize(img, (800,800)))
 filename = 'file2.jpg'
 selection = False
@@ -177,19 +220,14 @@ if input_img is not None:
                 if k == esc_keycode:
                     cv2.imwrite("file1.jpg", crop_img)
                     enlarge("file1.jpg")
-                    #img = cv2.imread("file1.jpg")
-                    #cv2.imwrite("file3.jpg", cv2.resize("file1.jpg", (1500,1500)))
-                    
-                    #image("file.jpg")
-                    #pixels("file.jpg")
-                    #display()
-
-                    #select("file3.jpg")
-                    erode("file3.jpg")
+                    #erode("file3.jpg")
                     binary("file3.jpg")
-                    #thinning("file1.jpg")
                     erode("binary.jpg")
                     thinning2("binary.jpg")
+                    
+                    s = skeletonize2("binary.jpg")
+                    plt.imshow(s)
+
                     ###
                     img = cv2.imread("erosion.jpg",0)
                     ret,img = cv2.threshold(img,127,255,0)
@@ -198,10 +236,11 @@ if input_img is not None:
                     img = cv2.dilate(img, element, iterations=3)
                     
                     skel = skeletonize(img)
+                    #cv2.imwrite("Skeletonized.jpg", skel)
                     #plt.imshow(skel, cmap="gray", interpolation="nearest")
                     #plt.show()
-
                     ###
+
                     cv2.destroyAllWindows()
                     break
 
