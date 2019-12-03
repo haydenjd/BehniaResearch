@@ -37,6 +37,8 @@ def thinning2(name):
     out_skeletonize = morphology.skeletonize(image_binary)
     out_thin = morphology.thin(image_binary)
     
+    #cv2.imwrite("gaps.jpg", out_skeletonize, cmap='gray')
+    plt.imsave('gaps.jpg', out_skeletonize, cmap='gray')
     plt.imshow(out_skeletonize, cmap='gray')
     plt.show()
 
@@ -136,6 +138,7 @@ def skeletonize(img):
             img = np.logical_and(img, np.logical_not(hm))
         if np.all(img == last):
             break
+    #cv2.imwrite("skeleton.jpg",img)
     return img
 
 def skeletonize2(img):
@@ -154,11 +157,28 @@ def skeletonize2(img):
         img[:,:] = eroded[:,:]
         if cv2.countNonZero(img) == 0:
             break
-    
     return skel
 
+def complete(img):
+    from skimage import io, morphology, img_as_bool, segmentation
+    from scipy import ndimage as ndi
+    import matplotlib.pyplot as plt
+    
+    image = img_as_bool(io.imread(img))
+    out = ndi.distance_transform_edt(~image)
+    out = out < 0.05 * out.max()
+    out = morphology.skeletonize(out)
+    out = morphology.binary_dilation(out, morphology.selem.disk(1))
+    out = segmentation.clear_border(out)
+    out = out | image
+    
+    plt.imshow(out, cmap='gray')
+    plt.imsave('/tmp/gaps_filled.png', out, cmap='gray')
+    plt.show()
+
+
 #############################################MAIN###################################
-img = cv2.imread('blackwhite.jpg')
+img = cv2.imread('crack1.jpg')
 cv2.imwrite("file2.jpg", cv2.resize(img, (800,800)))
 filename = 'file2.jpg'
 selection = False
@@ -224,18 +244,20 @@ if input_img is not None:
                     binary("file3.jpg")
                     erode("binary.jpg")
                     thinning2("binary.jpg")
-                    
-                    s = skeletonize2("binary.jpg")
-                    plt.imshow(s)
+
+                    #s = skeletonize2("binary.jpg")
+                    #plt.imshow(s)
 
                     ###
-                    img = cv2.imread("erosion.jpg",0)
-                    ret,img = cv2.threshold(img,127,255,0)
-                    element = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
-                    img = 255 - img
-                    img = cv2.dilate(img, element, iterations=3)
-                    
-                    skel = skeletonize(img)
+                    #img = cv2.imread("erosion.jpg",0)
+                    #ret,img = cv2.threshold(img,127,255,0)
+                    #element = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
+                    #img = 255 - img
+                    #img = cv2.dilate(img, element, iterations=3)
+                    #cv2.imwrite("skeleton.jpg",img)
+
+                    #skel = skeletonize(img)
+                    #complete(img)
                     #cv2.imwrite("Skeletonized.jpg", skel)
                     #plt.imshow(skel, cmap="gray", interpolation="nearest")
                     #plt.show()
