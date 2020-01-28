@@ -1,0 +1,3 @@
+Length 1: 4.111 inches
+Length 2: 1.902 inches
+Length 3: 0.013 inches
