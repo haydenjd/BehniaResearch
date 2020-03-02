@@ -163,7 +163,9 @@ cv2.imwrite("file2.jpg", cv2.resize(img, (800,800)))
 filename = 'file2.jpg'
 selection = False
 roi = []
-
+dist = cv2.distanceTransform(img,cv2.DIST_L2,3)
+_,mv,_,mp = cv2.minMaxLoc(dist)
+print(mv*2, mp)
 def roi_selection(event, x, y, flags, param):
         global selection, roi
         if event == cv2.EVENT_LBUTTONDOWN:
