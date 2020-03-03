@@ -1,6 +1,7 @@
 #Python Code that will take in a picture that contains cracking
 #Outputs the length of the cracking
 
+#All the imports for packages used
 import math
 import scipy.ndimage.morphology as m
 import cv2
@@ -10,12 +11,7 @@ from skimage import io, color, morphology
 from skimage import io, morphology, img_as_bool, segmentation
 from scipy import ndimage as ndi
 import matplotlib.pyplot as plt
-
-
-#Resizes the image
-def enlarge(fileName):
-    img = cv2.imread(fileName)
-    cv2.imwrite("file3.jpg", cv2.resize(img, (a,b)))
+import ctypes
 
 #Makes each pixel of the image black or white
 def binary(img):
@@ -32,7 +28,7 @@ def median(img1):
     img = cv2.imread(img1)
     median = cv2.medianBlur(img, 3)
     cv2.imwrite("median.jpg",median)
-    cv2.waitKey(0)
+    #cv2.waitKey(0)
 
 #Thins the image to one pixel wide using the skeletonize function from morphology
 def thinning2(name):
@@ -40,10 +36,18 @@ def thinning2(name):
     image_binary = image < 0.5
     out_skeletonize = morphology.skeletonize(image_binary)
     out_thin = morphology.thin(image_binary)
-    
+
     plt.imsave('gaps.jpg', out_skeletonize, cmap='gray')
     img = cv2.imread("gaps.jpg")
     cv2.imshow("Thinning2", img)
+    cv2.waitKey(0)
+
+#Finds the edges using the Canny Edge Detection
+def canny(name):
+    image = cv2.imread(name)
+    edges = cv2.Canny(image, 100, 200)
+    cv2.imwrite("canny.jpg",edges)
+    cv2.imshow("Canny Edge Detection", edges)
     cv2.waitKey(0)
 
 #Fills in gaps in the skeleton image
@@ -54,10 +58,10 @@ def complete(img):
     out = morphology.skeletonize(out)
     out = segmentation.clear_border(out)
     out = out | image
-    
+
     cv2.imshow("out",out)
     cv2.waitKey(0)
-    
+
     cv2.imwrite('gaps_filled.jpg', out)
 
 #Makes all green pixels white
@@ -76,6 +80,17 @@ def bandw(img1):
                 image[y,x] = [0,0,0]
     cv2.imwrite("bandw.jpg", image)
 
+#The switch function is used to assign each number of crack with a color
+def switch(x):
+    return {
+        1: 'Red',
+        2: 'Yellow',
+        3: 'White',
+        4: 'Purple',
+        5: 'Orange',
+        6: 'Green'
+    }.get(x, 'Color')
+
 #Function to calculate the length
 def getLength(img,wU,hU,units):
     image = cv2.imread(img)
@@ -84,6 +99,7 @@ def getLength(img,wU,hU,units):
     h = hU/height
     #Array created that will contain all endpoints of the cracks
     endpoints = [[]]
+    split = [[]]
 
     for y in range(0,height):
         for x in range(0,width):
@@ -103,6 +119,8 @@ def getLength(img,wU,hU,units):
                     #If there are more than 2 pixels in count, the selected pixel is a splitting point
                     if count>2:
                         image[y,x]=[255,0,0]
+                        split.append([x,y])
+                        #print("[%d,%d]" % (x,y))
                     #If there are exactly two pixels in count, the selected pixel is in the middle of the cracking
                     if count==2:
                         image[y,x]=[0,255,0]
@@ -116,73 +134,164 @@ def getLength(img,wU,hU,units):
                     endpoints.append([x,y])
 
     endpoints.remove([])
+    intersection = [[]]
+    slopes = []
     #l is the variable to keep track of the length
     l = 0.0
+    f= open("output.txt","w+")
     #Loops through all the endpoints
     #For each endpoint we start with that pixel and move throughout the crack, adding to the length for each pixel until we get to another endpoint
-    for a in range(0,len(endpoints)):
+    #counter is used to asign a number to each crack
+    counter = 1
+    while(len(endpoints)>0):
         tf = True
-        x = endpoints[a][0]
-        y = endpoints[a][1]
-        endpoints.remove([x,y])
+        x = endpoints[0][1]
+        y = endpoints[0][0]
+        endpoints.remove([y,x])
         while(tf):
-            image[y,x]=[255,255,0]
-            info = getColor(img,x,y)
+            #Colors each crack based on the counter number
+            if counter == 1:
+                image[x,y]=[0,0,255]
+            elif counter == 2:
+                image[x,y]=[0,255,255]
+            elif counter == 3:
+                image[x,y]=[255,255,255]
+            elif counter == 4:
+                image[x,y]=[255,0,255]
+            elif counter == 5:
+                image[x,y]=[0,127,255]
+            elif counter == 6:
+                image[x,y]=[127,0,255]
+            else:
+                image[x,y]=[127,127,255]
+            #Calls the getColor function to see which pixels are next to the selected one
+            info = getColor(img,y,x)
+            #Gets a number for how many pixels are next the selected one
             count = info[[len(info)-1][0]]
             info.remove([])
             info.remove(count)
+            #if count == 2:
+                #s = getSlope(img,y,x)
+                #slopes.append([s,x,y])
             check = 0
-            x1=(info[0][1])
-            y1=(info[0][1])
+            #Loops through all the endpoints and splitting points
             for a1 in range(0,len(info)):
                 color = image[info[a1-check][0],info[a1-check][1]]
                 b = color[0]
                 g = color[1]
                 r = color[2]
-                if b==255 and g==255 and r==0:
+                if r==255:
                     x=(info[a1-check][0])
                     y=(info[a1-check][1])
                     info.remove([x,y])
                     check = check + 1
-                #info.remove!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            #An endpoint has been reached so the length with be printed
-            if len(info)==0:
-                print("TOTAL LENGTH: %.3f %s" % (l,units))
+            if len(info) == 0 or [y,x] in endpoints:
+                if [y,x] in endpoints:
+                    endpoints.remove([y,x])
                 tf = False
-            #The pixel is in the middle of the crack and the length will be updated
-            elif len(info)==1:
+            elif len(info) == 1:
                 x1 = x
                 y1 = y
-                x = info[0][1]
-                y = info[0][0]
-                if x==x1 or y==y1:
+                x = info[0][0]
+                y = info[0][1]
+                if x==x1:
                     l = l+w
                 elif y==y1:
                     l = l+h
                 else:
                     l = l+math.sqrt(math.pow(w,2)+math.pow(h,2))
-            #The pixel is a splitting point
             else:
-                #info.add([x,y])
-                print("Splitting Point")
-                print("TOTAL LENGTH: %d pixels" % l)
-                #break
-        break
+                intersection.append([x,y])
+                image[x,y]=[0,0,0]
+                tf = False
+        print("Length %d (%s): %.3f %s" % (counter,switch(counter),l,units))
+        f.write("Length %d (%s): %.3f %s\n" % (counter,switch(counter),l,units))
+        counter = counter + 1
+        l = 0
+    f.close()
     cv2.imwrite('end.jpg',image)
     cv2.imshow("final",image)
     cv2.waitKey(0)
+    return slopes
 
+#Takes in the skeleton image and finds the perpendicular slope for each part of the cracking
+#Slope using 2-4 other pixels to get a more accurate length
+def getSlope(img,x,y):
+    total = 0
+    counter = 0
+    slope = 0
+    info = getColor(img,x,y)
+    point1 = [0,0]
+    point2 = [info[1][1], info[1][0]]
+    point3 = [x,y]
+    point4 = [info[2][1], info[2][0]]
+    point5 = [0,0]
+    infoP2 = getColor(img,point2[0],point2[1])
+    infoP4 = getColor(img,point4[0],point4[1])
+    if infoP2[len(infoP2)-1] == 2:
+        infoP2.remove(2)
+        infoP2.remove([y,x])
+        infoP2.remove([])
+        point1 = [infoP2[0][1],infoP2[0][0]]
+        counter = counter + 1
+    if infoP4[len(infoP4)-1] == 2:
+        infoP4.remove(2)
+        infoP4.remove([y,x])
+        infoP4.remove([])
+        point5 = [infoP4[0][1],infoP4[0][0]]
+        counter = counter + 5
+    if ((float(point2[0]-point1[0])) != 0) and (counter == 1 or counter == 6):
+        slope = slope + (float(point2[1]-point1[1])/(float(point2[0]-point1[0])))
+        total = total + 1
+    if (float(point3[0]-point2[0])) != 0:
+        slope = slope + (float(point3[1]-point2[1])/(float(point3[0]-point2[0])))
+        total = total + 1
+    if (float(point4[0]-point3[0])) != 0:
+        slope = slope + (float(point4[1]-point3[1])/(float(point4[0]-point3[0])))
+        total = total + 1
+    if ((float(point5[0]-point4[0])) != 0) and (counter == 5 or counter == 6):
+        slope = slope + (float(point5[1]-point4[1])/(float(point5[0]-point4[0])))
+        total = total + 1
+    slope = slope/total
+    return slope
+
+#Takes in the canny image and the slopes and returns the widths
+def getWidth(canny1,slopes):
+    canny = cv2.imread(canny1)
+    for a in range(0,len(slopes)):
+        slope = slopes[a][0]
+        x = slopes[a][1]
+        y = slopes[a][2]
+        canny[x,y]=[0,0,255]
+        newSlope = (float(slope)).as_integer_ratio()
+        slopeX = newSlope[1]
+        slopeY = newSlope[0]
+        check = True
+        counter = 1
+        while check:
+            if counter == 2:
+                check = False
+            canny = cv2.line(canny, (y+(counter*slopeY), x-(counter*slopeX)), (y-(counter*slopeY), x+(counter*slopeX)),(0,0,255))
+            counter = counter + 1
+    cv2.imwrite('slopes.jpg',canny)
+    cv2.imshow("Width",canny)
+    cv2.waitKey(0)
 
 #Returns an array with the pixels that are part of the cracking from the eight surrounding pixels
+#Returns the number of pixels that is part of the cracks to allow the code to categorize as either endpoint, splitting point or regular pixel
 def getColor(img,x,y):
+    #Reads in the image
     image = cv2.imread(img)
+    #Gets the height and width values (in pixels)
     height, width, channels = image.shape
     info = [[]]
     count = 0
+    #Gets the RGB values for the selected pixel
     color = image[y,x]
     b = color[0]
     g = color[1]
     r = color[2]
+    #Checks to see if the pixel to the upper left is part of the cracking
     color1 = image[y-1,x-1]
     b1 = color1[0]
     g1 = color1[1]
@@ -190,6 +299,7 @@ def getColor(img,x,y):
     if b1>150 and g1>150 and r1>150:
         count = count+1
         info.append([y-1,x-1])
+    #Checks to see if the pixel above is part of the cracking
     color2 = image[y-1,x]
     b2 = color2[0]
     g2 = color2[1]
@@ -197,6 +307,7 @@ def getColor(img,x,y):
     if b2>150 and g2>150 and r2>150:
         count = count+1
         info.append([y-1,x])
+    #Checks to see if the pixel to the upper right is part of the cracking
     color3 = image[y-1,x+1]
     b3 = color3[0]
     g3 = color3[1]
@@ -204,6 +315,7 @@ def getColor(img,x,y):
     if b3>150 and g3>150 and r3>150:
         count = count+1
         info.append([y-1,x+1])
+    #Checks to see if the pixel to the left is part of the cracking
     color4 = image[y,x-1]
     b4 = color4[0]
     g4 = color4[1]
@@ -211,6 +323,7 @@ def getColor(img,x,y):
     if b4>150 and g4>150 and r4>150:
         count = count+1
         info.append([y,x-1])
+    #Checks to see if the pixel to the right is part of the cracking
     color5 = image[y,x+1]
     b5 = color5[0]
     g5 = color5[1]
@@ -218,6 +331,7 @@ def getColor(img,x,y):
     if b5>150 and g5>150 and r5>150:
         count = count+1
         info.append([y,x+1])
+    #Checks to see if the pixel to the bottom left is part of the cracking
     color6 = image[y+1,x-1]
     b6 = color6[0]
     g6 = color6[1]
@@ -225,6 +339,7 @@ def getColor(img,x,y):
     if b6>150 and g6>150 and r6>150:
         count = count+1
         info.append([y+1,x-1])
+    #Checks to see if the pixel below is part of the cracking
     color7 = image[y+1,x]
     b7 = color7[0]
     g7 = color7[1]
@@ -232,6 +347,7 @@ def getColor(img,x,y):
     if b7>150 and g7>150 and r7>150:
         count = count+1
         info.append([y+1,x])
+    #Checks to see if the pixel to the bottom right is part of the cracking
     color8 = image[y+1,x+1]
     b8 = color8[0]
     g8 = color8[1]
@@ -245,16 +361,16 @@ def getColor(img,x,y):
 
 #############################################MAIN###################################
 #User enters the file name
-img = cv2.imread('Trial33.jpg')
+img = cv2.imread('intersection.png')
 
 #Height and Width obtained in number of pixels
 height, width, channels = img.shape
 
 #Height and Width are adjusted to fit on the screen
-a = int(width/5) 
-#a = width
-b = int(height/5) 
-#b = height
+#a = int(width/2)
+a = width
+#b = int(height/2)
+b = height
 
 #User enters the height and width and units
 widthUnits = 9.0
@@ -324,10 +440,10 @@ if input_img is not None:
                 if k == esc_keycode:
                     #Created file cropped.jpg that saves the newly cropped image
                     cv2.imwrite("cropped.jpg", crop_img)
-                    #Image size is updated
-                    enlarge("cropped.jpg")
                     #Image is transformed into a binary image
-                    binary("file3.jpg")
+                    binary("cropped.jpg")
+                    #Uses the Canny Edge Detection to find the edges of the cracking
+                    canny("binary.jpg")
                     #Median Filtering is used to get rid of access points
                     median("binary.jpg")
                     #Thinning is used to make the cracking one pixel wide
@@ -336,8 +452,10 @@ if input_img is not None:
                     complete("gaps.jpg")
                     #Cracking RGB values are 255
                     bandw("gaps_filled.jpg")
-                    #Length is calculated using demensions and units given
-                    getLength("bandw.jpg",widthUnits, heightUnits, units)
+                    #Length is calculated using demensions and units given. Perpendicular slopes are returned
+                    slopes = getLength("bandw.jpg",widthUnits, heightUnits, units)
+                    #Width is calculated
+                    #getWidth("canny.jpg",slopes)
                     #Windows are removed
                     cv2.destroyAllWindows()
                     break

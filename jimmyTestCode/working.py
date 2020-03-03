@@ -34,7 +34,7 @@ def thinning2(name):
     image_binary = image < 0.5
     out_skeletonize = morphology.skeletonize(image_binary)
     out_thin = morphology.thin(image_binary)
-    
+
     plt.imsave('gaps.jpg', out_skeletonize, cmap='gray')
     img = cv2.imread("gaps.jpg")
     cv2.imshow("Thinning2", img)
@@ -48,10 +48,10 @@ def complete(img):
     out = morphology.skeletonize(out)
     out = segmentation.clear_border(out)
     out = out | image
-    
+
     cv2.imshow("out",out)
     cv2.waitKey(0)
-    
+
     cv2.imwrite('gaps_filled.jpg', out)
 
 #Makes all green pixels white
@@ -167,7 +167,7 @@ def getLength(img,wU,hU,units):
         f.write("Length %d: %.3f %s\n" % (counter,l,units))
         counter = counter + 1
         l = 0
-    
+
     f.close()
     cv2.imwrite('end.jpg',image)
     cv2.imshow("final",image)
@@ -245,15 +245,15 @@ def getColor(img,x,y):
 
 #############################################MAIN###################################
 #User enters the file name
-img = cv2.imread('two.png')
+img = cv2.imread('split2.png')
 
 #Height and Width obtained in number of pixels
 height, width, channels = img.shape
 
 #Height and Width are adjusted to fit on the screen
-#a = int(width/5) 
+#a = int(width/5)
 a = width
-#b = int(height/5) 
+#b = int(height/5)
 b = height
 
 #User enters the height and width and units

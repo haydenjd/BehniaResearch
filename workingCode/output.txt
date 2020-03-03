@@ -1,0 +1,3 @@
+Length 1 (Red): 1.474 inches
+Length 2 (Yellow): 5.934 inches
+Length 3 (White): 3.720 inches
