@@ -148,6 +148,7 @@ def getLength(img,wU,hU,units):
         x = endpoints[0][1]
         y = endpoints[0][0]
         endpoints.remove([y,x])
+        #print("Starting @ [%d,%d]" % (y,x))
         while(tf):
             #Colors each crack based on the counter number
             if counter == 1:
@@ -170,9 +171,9 @@ def getLength(img,wU,hU,units):
             count = info[[len(info)-1][0]]
             info.remove([])
             info.remove(count)
-            #if count == 2:
-                #s = getSlope(img,y,x)
-                #slopes.append([s,x,y])
+            if count == 2:
+                s = getSlope(img,y,x)
+                slopes.append([s,x,y])
             check = 0
             #Loops through all the endpoints and splitting points
             for a1 in range(0,len(info)):
@@ -201,9 +202,14 @@ def getLength(img,wU,hU,units):
                 else:
                     l = l+math.sqrt(math.pow(w,2)+math.pow(h,2))
             else:
+                #AHHHHHH
                 intersection.append([x,y])
                 image[x,y]=[0,0,0]
+                #image[x,y]=[255,255,255]
                 tf = False
+        
+        #print(intersection)
+        #print("Ending @ [%d,%d]" % (y,x))
         print("Length %d (%s): %.3f %s" % (counter,switch(counter),l,units))
         f.write("Length %d (%s): %.3f %s\n" % (counter,switch(counter),l,units))
         counter = counter + 1
@@ -259,6 +265,7 @@ def getSlope(img,x,y):
 def getWidth(canny1,slopes):
     canny = cv2.imread(canny1)
     for a in range(0,len(slopes)):
+    #for a in range(12,14):
         slope = slopes[a][0]
         x = slopes[a][1]
         y = slopes[a][2]
@@ -269,6 +276,8 @@ def getWidth(canny1,slopes):
         check = True
         counter = 1
         while check:
+            #canny = cv2.line(canny, (y+(counter*slopeY), x+(counter*slopeX)), (y-(counter*slopeY), x-(counter*slopeX)),(0,0,255))
+            #if canny[y+(counter*slopeY), x+(counter*slopeX)] == [255,255,255] or canny[y-(counter*slopeY), x-(counter*slopeX)] == [255,255,255]:
             if counter == 2:
                 check = False
             canny = cv2.line(canny, (y+(counter*slopeY), x-(counter*slopeX)), (y-(counter*slopeY), x+(counter*slopeX)),(0,0,255))
@@ -361,16 +370,16 @@ def getColor(img,x,y):
 
 #############################################MAIN###################################
 #User enters the file name
-img = cv2.imread('intersection.png')
+img = cv2.imread('Noah.jpg')
 
 #Height and Width obtained in number of pixels
 height, width, channels = img.shape
 
 #Height and Width are adjusted to fit on the screen
-#a = int(width/2)
-a = width
-#b = int(height/2)
-b = height
+a = int(width/2)
+#a = width
+b = int(height/2)
+#b = height
 
 #User enters the height and width and units
 widthUnits = 9.0
@@ -455,7 +464,7 @@ if input_img is not None:
                     #Length is calculated using demensions and units given. Perpendicular slopes are returned
                     slopes = getLength("bandw.jpg",widthUnits, heightUnits, units)
                     #Width is calculated
-                    #getWidth("canny.jpg",slopes)
+                    getWidth("canny.jpg",slopes)
                     #Windows are removed
                     cv2.destroyAllWindows()
                     break
@@ -463,3 +472,6 @@ if input_img is not None:
 else:
         print("Please Check The Path of Input File")
 
+
+#Notes:
+#Loop through endpoints and splitting points but it loops a fixed number of times
