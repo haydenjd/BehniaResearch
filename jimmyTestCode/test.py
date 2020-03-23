@@ -12,6 +12,9 @@ from skimage import io, morphology, img_as_bool, segmentation
 from scipy import ndimage as ndi
 import matplotlib.pyplot as plt
 import ctypes
+import tkinter as tk
+import tkinter.filedialog
+from tkinter.filedialog import askopenfilename
 
 #Makes each pixel of the image black or white
 def binary(img):
@@ -398,25 +401,48 @@ def getColor(img,x,y):
     return info
 
 #############################################MAIN###################################
-#User enters the file name
-img = cv2.imread('Noah.jpg')
+#User finds file in file system
+filename = askopenfilename()
+img = cv2.imread(filename)
 
-#Height and Width obtained in number of pixels
+#The image is made smaller if it extends the window size
+user32 = ctypes.windll.user32
+h = user32.GetSystemMetrics(0)
+w = user32.GetSystemMetrics(1)
 height, width, channels = img.shape
-
-#Height and Width are adjusted to fit on the screen
-a = int(width/5)
-#a = width
-b = int(height/5)
-#b = height
+while(height>h or width>w):
+    height = (3/4)*height
+    width = (3/4)*width
 
 #User enters the height and width and units
-widthUnits = 8.5
-heightUnits = 11.0
-units = "inches"
+master = tk.Tk()
+tk.Label(master, text="Width").grid(row=0)
+tk.Label(master, text="Length").grid(row=1)
+tk.Label(master, text="Units").grid(row=2)
+
+e1 = tk.Entry(master)
+e2 = tk.Entry(master)
+e3 = tk.Entry(master)
+
+e1.grid(row=0, column=1)
+e2.grid(row=1, column=1)
+e3.grid(row=2, column=1)
+
+tk.Button(master, 
+          text='Done', 
+          command=master.quit).grid(row=4, 
+                                    column=0, 
+                                    sticky=tk.W, 
+                                    pady=4)
+
+master.mainloop()
+
+widthUnits = float(e1.get())
+heightUnits = float(e2.get())
+units = e3.get()
 
 #Image is resized
-cv2.imwrite("resize.jpg", cv2.resize(img, (a,b)))
+cv2.imwrite("resize.jpg", cv2.resize(img, (int(width),int(height))))
 filename = 'resize.jpg'
 selection = False
 roi = []
