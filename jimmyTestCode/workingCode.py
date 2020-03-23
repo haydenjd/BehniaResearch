@@ -15,10 +15,12 @@ import ctypes
 
 #Makes each pixel of the image black or white
 def binary(img):
-    im_gray = cv2.imread(img, cv2.IMREAD_GRAYSCALE)
-    (thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    cv2.imwrite("binary.jpg", im_bw)
-    cv2.imshow("Binary", im_bw)
+    img = cv2.imread(img,0)
+    img = cv2.medianBlur(img,5)
+    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
+                cv2.THRESH_BINARY,11,2)
+    cv2.imwrite("binary.jpg", th3)
+    cv2.imshow("Binary",th3)
     cv2.waitKey(0)
 
 #Applies median filtering to get rid of noise
@@ -26,6 +28,7 @@ def median(img1):
     img = cv2.imread(img1)
     median = cv2.medianBlur(img, 3)
     cv2.imwrite("median.jpg",median)
+    #cv2.waitKey(0)
 
 #Thins the image to one pixel wide using the skeletonize function from morphology
 def thinning2(name):
@@ -58,6 +61,7 @@ def complete(img):
 
     cv2.imshow("out",out)
     cv2.waitKey(0)
+
     cv2.imwrite('gaps_filled.jpg', out)
 
 #Makes all green pixels white
@@ -84,7 +88,7 @@ def switch(x):
         3: 'White',
         4: 'Purple',
         5: 'Orange',
-        6: 'Pink'
+        6: 'Green'
     }.get(x, 'Color')
 
 #Function to calculate the length
@@ -166,9 +170,9 @@ def getLength(img,wU,hU,units):
             count = info[[len(info)-1][0]]
             info.remove([])
             info.remove(count)
-            if count == 2:
-                s = getSlope(img,y,x)
-                slopes.append([s,x,y])
+            #if count == 2:
+                #s = getSlope(img,y,x)
+                #slopes.append([s,x,y])
             check = 0
             #Loops through all the endpoints and splitting points
             for a1 in range(0,len(info)):
@@ -198,15 +202,11 @@ def getLength(img,wU,hU,units):
                     l = l+math.sqrt(math.pow(w,2)+math.pow(h,2))
             else:
                 intersection.append([x,y])
-                for i in range(0,len(info)):
-                    endpoints.append([info[i][1],info[i][0]])
                 image[x,y]=[0,0,0]
-                image[x,y]=[255,255,255]
                 tf = False
-        if l != 0:
-            print("Length %d (%s): %.3f %s" % (counter,switch(counter),l,units))
-            f.write("Length %d (%s): %.3f %s\n" % (counter,switch(counter),l,units))
-            counter = counter + 1
+        print("Length %d (%s): %.3f %s" % (counter,switch(counter),l,units))
+        f.write("Length %d (%s): %.3f %s\n" % (counter,switch(counter),l,units))
+        counter = counter + 1
         l = 0
     f.close()
     cv2.imwrite('end.jpg',image)
@@ -221,7 +221,6 @@ def getSlope(img,x,y):
     counter = 0
     slope = 0
     info = getColor(img,x,y)
-    #We look to get at least the two points around the selected one, but will hopefully get up to four around it
     point1 = [0,0]
     point2 = [info[1][1], info[1][0]]
     point3 = [x,y]
@@ -253,64 +252,27 @@ def getSlope(img,x,y):
     if ((float(point5[0]-point4[0])) != 0) and (counter == 5 or counter == 6):
         slope = slope + (float(point5[1]-point4[1])/(float(point5[0]-point4[0])))
         total = total + 1
-
-    if total == 0:
-        slope = 1
-    else:
-        slope = slope/total
+    slope = slope/total
     return slope
 
 #Takes in the canny image and the slopes and returns the widths
-def getWidth(canny1,slopes,wU,hU,units):
+def getWidth(canny1,slopes):
     canny = cv2.imread(canny1)
-    #WIdth and height in pixels and in the propper units are now variables
-    height, width, channels = canny.shape
-    w = wU/width
-    h = hU/height
-    #Variables for high, low, avg and an array of all widths are initialized and will be changed to what they should be throughout the code
-    total = []
-    high = 0
-    low = 100
-    avg = 0
-    #Loops through the array of all the slopes of the pixels
     for a in range(0,len(slopes)):
         slope = slopes[a][0]
         x = slopes[a][1]
         y = slopes[a][2]
         canny[x,y]=[0,0,255]
-        #Slope is put into fraction form to get the x and y of the slope
         newSlope = (float(slope)).as_integer_ratio()
         slopeX = newSlope[1]
         slopeY = newSlope[0]
         check = True
         counter = 1
-        #Slope is used to extend the length until it reaches the edges of the cracking
         while check:
-            #Checks to see if slope causes the width to go out of bounds
-            if y-(counter*slopeY) >= width or y+(counter*slopeY) >= width or y-(counter*slopeY) < 0 or y+(counter*slopeY) < 0 or x-(counter*slopeX) >= width or x+(counter*slopeX) >= width or x-(counter*slopeX) < 0 or x+(counter*slopeX) < 0:
-                #print("Out of bounds")
-                break
-            #Slope is used to add to the width
-            color1 = canny[x+(counter*slopeX),y-(counter*slopeY)]
-            color2 = canny[x-(counter*slopeX),y+(counter*slopeY)]
-            if (color1[0]>200 and color1[1]>200 and color1[2]) or (color2[0]>200 and color2[1]>200 and color2[2]):
+            if counter == 2:
                 check = False
-                total.append(math.sqrt(2*(math.pow((counter*w*slopeX),2)+math.pow((counter*h*slopeY),2))))
-                canny = cv2.line(canny, (y+(counter*slopeY), x-(counter*slopeX)), (y-(counter*slopeY), x+(counter*slopeX)),(0,0,255))
+            canny = cv2.line(canny, (y+(counter*slopeY), x-(counter*slopeX)), (y-(counter*slopeY), x+(counter*slopeX)),(0,0,255))
             counter = counter + 1
-    #The average width is calculated
-    for b in range(0,len(total)):
-        if total[b] < low:
-            low = total[b]
-        if total[b] > high:
-            high = total[b]
-        avg = avg + total[b]
-    avg = avg/len(total)
-    #Avg, smallest and largest lengths printed out
-    print("Average Width: %0.4f %s" % (avg,units))
-    print("Smallest Width: %0.4f %s" % (low,units))
-    print("Highest Width: %0.4f %s" % (high,units))
-    #Saves and shows the widths on the canny image
     cv2.imwrite('slopes.jpg',canny)
     cv2.imshow("Width",canny)
     cv2.waitKey(0)
@@ -399,20 +361,20 @@ def getColor(img,x,y):
 
 #############################################MAIN###################################
 #User enters the file name
-img = cv2.imread('thick.png')
+img = cv2.imread('Trial33.jpg')
 
 #Height and Width obtained in number of pixels
 height, width, channels = img.shape
 
 #Height and Width are adjusted to fit on the screen
-#a = int(width/2)
-a = width
-#b = int(height/2)
-b = height
+a = int(width/5)
+#a = width
+b = int(height/5)
+#b = height
 
 #User enters the height and width and units
-widthUnits = 8.5
-heightUnits = 11.0
+widthUnits = 9.0
+heightUnits = 6.0
 units = "inches"
 
 #Image is resized
@@ -420,8 +382,6 @@ cv2.imwrite("resize.jpg", cv2.resize(img, (a,b)))
 filename = 'resize.jpg'
 selection = False
 roi = []
-
-crop_img = [0]
 
 #Uses ROI to allow the user to crop the image by dragging their mouse
 def roi_selection(event, x, y, flags, param):
@@ -478,9 +438,6 @@ if input_img is not None:
 
                 k = cv2.waitKey(wait_time)
                 if k == esc_keycode:
-                    print(len(crop_img))
-                    if len(crop_img) == 1:
-                        crop_img = img
                     #Created file cropped.jpg that saves the newly cropped image
                     cv2.imwrite("cropped.jpg", crop_img)
                     #Image is transformed into a binary image
@@ -498,7 +455,7 @@ if input_img is not None:
                     #Length is calculated using demensions and units given. Perpendicular slopes are returned
                     slopes = getLength("bandw.jpg",widthUnits, heightUnits, units)
                     #Width is calculated
-                    getWidth("canny.jpg", slopes, widthUnits, heightUnits, units)
+                    #getWidth("canny.jpg",slopes)
                     #Windows are removed
                     cv2.destroyAllWindows()
                     break
@@ -506,6 +463,3 @@ if input_img is not None:
 else:
         print("Please Check The Path of Input File")
 
-
-#Notes:
-#Loop through endpoints and splitting points but it loops a fixed number of times
