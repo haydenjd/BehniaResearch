@@ -2,8 +2,10 @@
 #Outputs the length of the cracking
 
 #All the imports for packages used
+import shutil
+import os
 import math
-#import scipy.ndimage.morphology as m
+import scipy.ndimage.morphology as m
 import cv2
 import numpy as np
 from skimage import img_as_float
@@ -21,8 +23,6 @@ def binary(img):
     im_gray = cv2.imread(img, cv2.IMREAD_GRAYSCALE)
     (thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     cv2.imwrite("binary.jpg", im_bw)
-    cv2.imshow("Binary", im_bw)
-    cv2.waitKey(0)
 
 #Applies median filtering to get rid of noise
 def median(img1):
@@ -36,19 +36,13 @@ def thinning2(name):
     image_binary = image < 0.5
     out_skeletonize = morphology.skeletonize(image_binary)
     out_thin = morphology.thin(image_binary)
-
     plt.imsave('gaps.jpg', out_skeletonize, cmap='gray')
-    img = cv2.imread("gaps.jpg")
-    cv2.imshow("Thinning2", img)
-    cv2.waitKey(0)
 
 #Finds the edges using the Canny Edge Detection
 def canny(name):
     image = cv2.imread(name)
     edges = cv2.Canny(image, 100, 200)
     cv2.imwrite("canny.jpg",edges)
-    cv2.imshow("Canny Edge Detection", edges)
-    cv2.waitKey(0)
 
 #Fills in gaps in the skeleton image
 def complete(img):
@@ -58,9 +52,6 @@ def complete(img):
     out = morphology.skeletonize(out)
     out = segmentation.clear_border(out)
     out = out | image
-
-    cv2.imshow("out",out)
-    cv2.waitKey(0)
     cv2.imwrite('gaps_filled.jpg', out)
 
 #Makes all green pixels white
@@ -91,7 +82,7 @@ def switch(x):
     }.get(x, 'Color')
 
 #Function to calculate the length
-def getLength(img,wU,hU,units):
+def getLength(img,wU,hU,units,filename):
     image = cv2.imread(img)
     height, width, channels = image.shape
     w = wU/width
@@ -137,7 +128,8 @@ def getLength(img,wU,hU,units):
     slopes = []
     #l is the variable to keep track of the length
     l = 0.0
-    f= open("output.txt","w+")
+    name = filename + "_output.txt"
+    f= open(name,"w+")
     #Loops through all the endpoints
     #For each endpoint we start with that pixel and move throughout the crack, adding to the length for each pixel until we get to another endpoint
     #counter is used to asign a number to each crack
@@ -207,14 +199,11 @@ def getLength(img,wU,hU,units):
                 image[x,y]=[255,255,255]
                 tf = False
         if l != 0:
-            print("Length %d (%s): %.3f %s" % (counter,switch(counter),l,units))
             f.write("Length %d (%s): %.3f %s\n" % (counter,switch(counter),l,units))
             counter = counter + 1
         l = 0
     f.close()
     cv2.imwrite('end.jpg',image)
-    cv2.imshow("final",image)
-    cv2.waitKey(0)
     return slopes
 
 #Takes in the skeleton image and finds the perpendicular slope for each part of the cracking
@@ -310,13 +299,8 @@ def getWidth(canny1,slopes,wU,hU,units):
         avg = avg + total[b]
     avg = avg/len(total)
     #Avg, smallest and largest lengths printed out
-    print("Average Width: %0.4f %s" % (avg,units))
-    print("Smallest Width: %0.4f %s" % (low,units))
-    print("Highest Width: %0.4f %s" % (high,units))
     #Saves and shows the widths on the canny image
     cv2.imwrite('slopes.jpg',canny)
-    cv2.imshow("Width",canny)
-    cv2.waitKey(0)
 
 #Returns an array with the pixels that are part of the cracking from the eight surrounding pixels
 #Returns the number of pixels that is part of the cracks to allow the code to categorize as either endpoint, splitting point or regular pixel
@@ -402,135 +386,49 @@ def getColor(img,x,y):
 
 #############################################MAIN###################################
 #User finds file in file system
-filename = askopenfilename()
-img = cv2.imread(filename)
 
-#The image is made smaller if it extends the window size
-user32 = ctypes.windll.user32
-h = user32.GetSystemMetrics(0)
-w = user32.GetSystemMetrics(1)
-height, width, channels = img.shape
-while(height>h or width>w):
-    height = (3/4)*height
-    width = (3/4)*width
-
-#User enters the height and width and units
-master = tk.Tk()
-tk.Label(master, text="Width").grid(row=0)
-tk.Label(master, text="Length").grid(row=1)
-tk.Label(master, text="Units").grid(row=2)
-
-e1 = tk.Entry(master)
-e2 = tk.Entry(master)
-e3 = tk.Entry(master)
-
-e1.grid(row=0, column=1)
-e2.grid(row=1, column=1)
-e3.grid(row=2, column=1)
-
-tk.Button(master, 
-          text='Done', 
-          command=master.quit).grid(row=4, 
-                                    column=0, 
-                                    sticky=tk.W, 
-                                    pady=4)
-
-master.mainloop()
-
-widthUnits = float(e1.get())
-heightUnits = float(e2.get())
-units = e3.get()
-
-#Image is resized
-cv2.imwrite("resize.jpg", cv2.resize(img, (int(width),int(height))))
-filename = 'resize.jpg'
-selection = False
-roi = []
-
-crop_img = [0]
-
-#Uses ROI to allow the user to crop the image by dragging their mouse
-def roi_selection(event, x, y, flags, param):
-        global selection, roi
-        if event == cv2.EVENT_LBUTTONDOWN:
-                selection = True
-                roi = [x, y, x, y]
-        elif event == cv2.EVENT_MOUSEMOVE:
-                if selection == True:
-                        roi[2] = x
-                        roi[3] = y
-
-        elif event == cv2.EVENT_LBUTTONUP:
-                selection = False
-                roi[2] = x
-                roi[3] = y
-
-image_read_path=filename
-window_name='Input Image'
-window_crop_name='Cropped Image'
-esc_keycode=27
-wait_time=1
-input_img = cv2.imread(image_read_path,cv2.IMREAD_UNCHANGED)
-
-if input_img is not None:
-        clone = input_img.copy()
-        cv2.namedWindow(window_name,cv2.WINDOW_AUTOSIZE)
-        cv2.setMouseCallback(window_name, roi_selection)
-
-        while True:
-                cv2.imshow(window_name,input_img)
-
-                if len(roi) == 4:
-                        input_img = clone.copy()
-                        roi = [0 if i < 0 else i for i in roi]
-                        cv2.rectangle(input_img, (roi[0],roi[1]), (roi[2],roi[3]), (0, 255, 0), 2)
-                        if roi[0] > roi[2]:
-                                x1 = roi[2]
-                                x2 = roi[0]
-                        else:
-                                x1 = roi[0]
-                                x2 = roi[2]
-                        if roi[1] > roi[3]:
-                                y1 = roi[3]
-                                y2 = roi[1]
-                        else:
-                                y1 = roi[1]
-                                y2 = roi[3]
-
-                        crop_img = clone[y1 : y2 , x1 : x2]
-                        if len(crop_img):
-                                cv2.namedWindow(window_crop_name,cv2.WINDOW_AUTOSIZE)
-                                cv2.imshow(window_crop_name,crop_img)
-
-                k = cv2.waitKey(wait_time)
-                if k == esc_keycode:
-                    if len(crop_img) == 1:
-                        crop_img = img
-                    #Created file cropped.jpg that saves the newly cropped image
-                    cv2.imwrite("cropped.jpg", crop_img)
-                    #Image is transformed into a binary image
-                    binary("cropped.jpg")
-                    #Uses the Canny Edge Detection to find the edges of the cracking
-                    canny("binary.jpg")
-                    #Median Filtering is used to get rid of access points
-                    median("binary.jpg")
-                    #Thinning is used to make the cracking one pixel wide
-                    thinning2("median.jpg")
-                    #Complete fills in gaps in the cracking
-                    complete("gaps.jpg")
-                    #Cracking RGB values are 255
-                    bandw("gaps_filled.jpg")
-                    #Length is calculated using demensions and units given. Perpendicular slopes are returned
-                    slopes = getLength("bandw.jpg",widthUnits, heightUnits, units)
-                    #Width is calculated
-                    getWidth("canny.jpg", slopes, widthUnits, heightUnits, units)
-                    #Windows are removed
-                    cv2.destroyAllWindows()
-                    break
-
-else:
-        print("Please Check The Path of Input File")
-
-
-#Notes:
-#Loop through endpoints and splitting points but it loops a fixed number of times
+pathA = "C:\\Users\\jimmy\\Documents\\Behnia Research\\BehniaResearch\\loop\\images"
+pathB = "C:\\Users\\jimmy\\Documents\\Behnia Research\\BehniaResearch\\loop"
+files = [i for i in os.listdir(pathA) if i.endswith("PNG") or i.endswith("png") or i.endswith("jpg") or i.endswith("JPG")]
+for file in files:
+    print(file)
+    path1 = pathA + "\\" + file
+    path2 = pathB + "\\" + file
+    #os.rename(path1, path2)
+    shutil.copy(path1, path2)
+    #os.replace(path1, path2)
+    filename = file
+    img = cv2.imread(filename)
+    
+    widthUnits = 9
+    heightUnits = 6
+    units = "inches"
+    height, width, channels = img.shape
+    
+    #Image is resized
+    cv2.imwrite("resize.jpg", cv2.resize(img, (int(width),int(height))))
+    filename = 'resize.jpg'
+    selection = False
+    roi = []
+    crop_img = [0]
+    crop_img = img
+    #Created file cropped.jpg that saves the newly cropped image
+    cv2.imwrite("cropped.jpg", crop_img)
+    #Image is transformed into a binary image
+    binary("cropped.jpg")
+    #Uses the Canny Edge Detection to find the edges of the cracking
+    canny("binary.jpg")
+    #Median Filtering is used to get rid of access points
+    median("binary.jpg")
+    #Thinning is used to make the cracking one pixel wide
+    thinning2("median.jpg")
+    #Complete fills in gaps in the cracking
+    complete("gaps.jpg")
+    #Cracking RGB values are 255
+    bandw("gaps_filled.jpg")
+    #Length is calculated using demensions and units given. Perpendicular slopes are returned
+    slopes = getLength("bandw.jpg",widthUnits, heightUnits, units, file)
+    #Width is calculated
+    getWidth("canny.jpg", slopes, widthUnits, heightUnits, units)
+    #Windows are removed
+    cv2.destroyAllWindows()
