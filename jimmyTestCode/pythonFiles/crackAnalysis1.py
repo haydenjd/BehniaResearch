@@ -3,7 +3,7 @@
 
 #All the imports for packages used
 import math
-#import scipy.ndimage.morphology as m
+import scipy.ndimage.morphology as m
 import cv2
 import numpy as np
 from skimage import img_as_float
@@ -18,10 +18,12 @@ from tkinter.filedialog import askopenfilename
 
 #Makes each pixel of the image black or white
 def binary(img):
-    im_gray = cv2.imread(img, cv2.IMREAD_GRAYSCALE)
-    (thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    cv2.imwrite("binary.jpg", im_bw)
-    cv2.imshow("Binary", im_bw)
+    img = cv2.imread(img,0)
+    img = cv2.medianBlur(img,5)
+    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
+                cv2.THRESH_BINARY,11,2)
+    cv2.imwrite("binary.jpg", th3)
+    cv2.imshow("Binary",th3)
     cv2.waitKey(0)
 
 #Applies median filtering to get rid of noise
@@ -505,7 +507,7 @@ if input_img is not None:
                 k = cv2.waitKey(wait_time)
                 if k == esc_keycode:
                     if len(crop_img) == 1:
-                        crop_img = img
+                        crop_img = cv2.imread(filename)
                     #Created file cropped.jpg that saves the newly cropped image
                     cv2.imwrite("cropped.jpg", crop_img)
                     #Image is transformed into a binary image

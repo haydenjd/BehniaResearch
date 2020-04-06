@@ -3,7 +3,7 @@
 
 #All the imports for packages used
 import math
-#import scipy.ndimage.morphology as m
+import scipy.ndimage.morphology as m
 import cv2
 import numpy as np
 from skimage import img_as_float
@@ -15,13 +15,34 @@ import ctypes
 import tkinter as tk
 import tkinter.filedialog
 from tkinter.filedialog import askopenfilename
-
 #Makes each pixel of the image black or white
 def binary(img):
     im_gray = cv2.imread(img, cv2.IMREAD_GRAYSCALE)
     (thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     cv2.imwrite("binary.jpg", im_bw)
     cv2.imshow("Binary", im_bw)
+    cv2.waitKey(0)
+
+def binary1(img):
+    img = cv2.imread(img,0)
+    kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+    im = cv2.filter2D(img, -1, kernel)
+    cv2.imshow("Sharpening",im)
+    img = cv2.medianBlur(img,5)
+    #cv2.imshow("image",img)
+    cv2.waitKey(0)
+    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
+                cv2.THRESH_BINARY,11,2)
+    
+    cv2.imwrite("binary1.jpg", th3)
+    cv2.imshow("Binary1",th3)
+    cv2.waitKey(0)
+
+def binary2(img):
+    img_grey = cv2.imread(img, cv2.IMREAD_GRAYSCALE)
+    thresh = 118
+    img_binary = cv2.threshold(img_grey, thresh, 255, cv2.THRESH_BINARY)[1]
+    cv2.imshow("Binary2",img_binary)
     cv2.waitKey(0)
 
 #Applies median filtering to get rid of noise
@@ -90,6 +111,7 @@ def switch(x):
         6: 'Pink'
     }.get(x, 'Color')
 
+#Function to calculate the length
 #Function to calculate the length
 def getLength(img,wU,hU,units):
     image = cv2.imread(img)
@@ -505,26 +527,28 @@ if input_img is not None:
                 k = cv2.waitKey(wait_time)
                 if k == esc_keycode:
                     if len(crop_img) == 1:
-                        crop_img = img
+                        crop_img = cv2.imread(filename)
                     #Created file cropped.jpg that saves the newly cropped image
                     cv2.imwrite("cropped.jpg", crop_img)
                     #Image is transformed into a binary image
                     binary("cropped.jpg")
-                    #Uses the Canny Edge Detection to find the edges of the cracking
-                    canny("binary.jpg")
-                    #Median Filtering is used to get rid of access points
-                    median("binary.jpg")
-                    #Thinning is used to make the cracking one pixel wide
-                    thinning2("median.jpg")
-                    #Complete fills in gaps in the cracking
-                    complete("gaps.jpg")
-                    #Cracking RGB values are 255
-                    bandw("gaps_filled.jpg")
-                    #Length is calculated using demensions and units given. Perpendicular slopes are returned
-                    slopes = getLength("bandw.jpg",widthUnits, heightUnits, units)
-                    #Width is calculated
-                    getWidth("canny.jpg", slopes, widthUnits, heightUnits, units)
-                    #Windows are removed
+                    binary1("cropped.jpg")
+                    #binary2("cropped.jpg")
+                    ##Uses the Canny Edge Detection to find the edges of the cracking
+                    #canny("binary1.jpg")
+                    ##Median Filtering is used to get rid of access points
+                    #median("binary.jpg")
+                    ##Thinning is used to make the cracking one pixel wide
+                    #thinning2("median.jpg")
+                    ##Complete fills in gaps in the cracking
+                    #complete("gaps.jpg")
+                    ##Cracking RGB values are 255
+                    #bandw("gaps_filled.jpg")
+                    ##Length is calculated using demensions and units given. Perpendicular slopes are returned
+                    #slopes = getLength("bandw.jpg",widthUnits, heightUnits, units)
+                    ##Width is calculated
+                    #getWidth("canny.jpg", slopes, widthUnits, heightUnits, units)
+                    ##Windows are removed
                     cv2.destroyAllWindows()
                     break
 

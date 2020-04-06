@@ -387,7 +387,7 @@ def getColor(img,x,y):
 #############################################MAIN###################################
 #User finds file in file system
 
-pathA = "C:\\Users\\jimmy\\Documents\\Behnia Research\\BehniaResearch\\images"
+pathA = "C:\\Users\\jimmy\\Documents\\Behnia Research\\BehniaResearch\\loopImages"
 pathB = "C:\\Users\\jimmy\\Documents\\Behnia Research\\BehniaResearch"
 files = [i for i in os.listdir(pathA) if i.endswith("PNG") or i.endswith("png") or i.endswith("jpg") or i.endswith("JPG")]
 for file in files:

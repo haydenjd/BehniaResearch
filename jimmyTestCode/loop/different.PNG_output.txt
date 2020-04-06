@@ -1,5 +1,0 @@
-Length 1 (Red): 3.690 inches
-Length 2 (Yellow): 1.964 inches
-Length 3 (White): 2.837 inches
-Length 4 (Purple): 4.665 inches
-Length 5 (Orange): 2.833 inches
