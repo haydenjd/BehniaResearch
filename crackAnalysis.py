@@ -1,9 +1,5 @@
-#Python Code that will take in a picture that contains cracking
-#Outputs the length of the cracking
-
-#All the imports for packages used
 import math
-#import scipy.ndimage.morphology as m
+import scipy.ndimage.morphology as m
 import cv2
 import numpy as np
 from skimage import img_as_float
@@ -22,6 +18,15 @@ def binary(img):
     (thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     cv2.imwrite("binary.jpg", im_bw)
     cv2.imshow("Binary", im_bw)
+    cv2.waitKey(0)
+
+def binary1(img):
+    img = cv2.imread(img,0)
+    img = cv2.medianBlur(img,5)
+    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
+                cv2.THRESH_BINARY,11,2)
+    cv2.imwrite("binary1.jpg", th3)
+    cv2.imshow("Binary1",th3)
     cv2.waitKey(0)
 
 #Applies median filtering to get rid of noise
@@ -401,7 +406,11 @@ def getColor(img,x,y):
     return info
 
 #############################################MAIN###################################
-#User finds file in file system
+cropping = False
+esc_keycode=27
+x_start, y_start, x_end, y_end = 0, 0, 0, 0
+done = False
+
 filename = askopenfilename()
 img = cv2.imread(filename)
 
@@ -411,8 +420,8 @@ h = user32.GetSystemMetrics(0)
 w = user32.GetSystemMetrics(1)
 height, width, channels = img.shape
 while(height>h or width>w):
-    height = (3/4)*height
-    width = (3/4)*width
+    height = (9/10)*height
+    width = (9/10)*width
 
 #User enters the height and width and units
 master = tk.Tk()
@@ -428,11 +437,11 @@ e1.grid(row=0, column=1)
 e2.grid(row=1, column=1)
 e3.grid(row=2, column=1)
 
-tk.Button(master, 
-          text='Done', 
-          command=master.quit).grid(row=4, 
-                                    column=0, 
-                                    sticky=tk.W, 
+tk.Button(master,
+          text='Done',
+          command=master.quit).grid(row=4,
+                                    column=0,
+                                    sticky=tk.W,
                                     pady=4)
 
 master.mainloop()
@@ -441,96 +450,67 @@ widthUnits = float(e1.get())
 heightUnits = float(e2.get())
 units = e3.get()
 
-#Image is resized
 cv2.imwrite("resize.jpg", cv2.resize(img, (int(width),int(height))))
-filename = 'resize.jpg'
-selection = False
-roi = []
+img = cv2.imread("resize.jpg")
+oriImage = img.copy()
 
-crop_img = [0]
+def mouse_crop(event, x, y, flags, param):
+    # grab references to the global variables
+    global x_start, y_start, x_end, y_end, cropping
+ 
+    # if the left mouse button was DOWN, start RECORDING
+    # (x, y) coordinates and indicate that cropping is being
+    if event == cv2.EVENT_LBUTTONDOWN:
+        x_start, y_start, x_end, y_end = x, y, x, y
+        cropping = True
+ 
+    # Mouse is Moving
+    elif event == cv2.EVENT_MOUSEMOVE:
+        if cropping == True:
+            x_end, y_end = x, y
+ 
+    # if the left mouse button was released
+    elif event == cv2.EVENT_LBUTTONUP:
+        # record the ending (x, y) coordinates
+        x_end, y_end = x, y
+        cropping = False # cropping is finished
+ 
+        refPoint = [(x_start, y_start), (x_end, y_end)]
+ 
+        if len(refPoint) == 2: #when two points were found
+            roi = oriImage[refPoint[0][1]:refPoint[1][1], refPoint[0][0]:refPoint[1][0]]
+            cv2.imshow("Cropped", roi)
+ 
+cv2.namedWindow("image")
+cv2.setMouseCallback("image", mouse_crop)
+ 
+while done == False:
+    i = img.copy()
+    if not cropping:
+        cv2.imshow("image", img)
+    elif cropping:
+        cv2.rectangle(i, (x_start, y_start), (x_end, y_end), (255, 0, 0), 2)
+        cv2.imshow("image", i)
+    k = cv2.waitKey(1)
+    if k == esc_keycode:
+        break
 
-#Uses ROI to allow the user to crop the image by dragging their mouse
-def roi_selection(event, x, y, flags, param):
-        global selection, roi
-        if event == cv2.EVENT_LBUTTONDOWN:
-                selection = True
-                roi = [x, y, x, y]
-        elif event == cv2.EVENT_MOUSEMOVE:
-                if selection == True:
-                        roi[2] = x
-                        roi[3] = y
-
-        elif event == cv2.EVENT_LBUTTONUP:
-                selection = False
-                roi[2] = x
-                roi[3] = y
-
-image_read_path=filename
-window_name='Input Image'
-window_crop_name='Cropped Image'
-esc_keycode=27
-wait_time=1
-input_img = cv2.imread(image_read_path,cv2.IMREAD_UNCHANGED)
-
-if input_img is not None:
-        clone = input_img.copy()
-        cv2.namedWindow(window_name,cv2.WINDOW_AUTOSIZE)
-        cv2.setMouseCallback(window_name, roi_selection)
-
-        while True:
-                cv2.imshow(window_name,input_img)
-
-                if len(roi) == 4:
-                        input_img = clone.copy()
-                        roi = [0 if i < 0 else i for i in roi]
-                        cv2.rectangle(input_img, (roi[0],roi[1]), (roi[2],roi[3]), (0, 255, 0), 2)
-                        if roi[0] > roi[2]:
-                                x1 = roi[2]
-                                x2 = roi[0]
-                        else:
-                                x1 = roi[0]
-                                x2 = roi[2]
-                        if roi[1] > roi[3]:
-                                y1 = roi[3]
-                                y2 = roi[1]
-                        else:
-                                y1 = roi[1]
-                                y2 = roi[3]
-
-                        crop_img = clone[y1 : y2 , x1 : x2]
-                        if len(crop_img):
-                                cv2.namedWindow(window_crop_name,cv2.WINDOW_AUTOSIZE)
-                                cv2.imshow(window_crop_name,crop_img)
-
-                k = cv2.waitKey(wait_time)
-                if k == esc_keycode:
-                    if len(crop_img) == 1:
-                        crop_img = img
-                    #Created file cropped.jpg that saves the newly cropped image
-                    cv2.imwrite("cropped.jpg", crop_img)
-                    #Image is transformed into a binary image
-                    binary("cropped.jpg")
-                    #Uses the Canny Edge Detection to find the edges of the cracking
-                    canny("binary.jpg")
-                    #Median Filtering is used to get rid of access points
-                    median("binary.jpg")
-                    #Thinning is used to make the cracking one pixel wide
-                    thinning2("median.jpg")
-                    #Complete fills in gaps in the cracking
-                    complete("gaps.jpg")
-                    #Cracking RGB values are 255
-                    bandw("gaps_filled.jpg")
-                    #Length is calculated using demensions and units given. Perpendicular slopes are returned
-                    slopes = getLength("bandw.jpg",widthUnits, heightUnits, units)
-                    #Width is calculated
-                    getWidth("canny.jpg", slopes, widthUnits, heightUnits, units)
-                    #Windows are removed
-                    cv2.destroyAllWindows()
-                    break
-
-else:
-        print("Please Check The Path of Input File")
-
-
-#Notes:
-#Loop through endpoints and splitting points but it loops a fixed number of times
+#Image is transformed into a binary image
+binary("cropped.jpg")
+#binary1("cropped.jpg")
+#Uses the Canny Edge Detection to find the edges of the cracking
+canny("binary.jpg")
+#Median Filtering is used to get rid of access points
+median("binary.jpg")
+#Thinning is used to make the cracking one pixel wide
+thinning2("median.jpg")
+#Complete fills in gaps in the cracking
+complete("gaps.jpg")
+#Cracking RGB values are 255
+bandw("gaps_filled.jpg")
+#Length is calculated using demensions and units given. Perpendicular slopes are returned
+slopes = getLength("bandw.jpg",widthUnits, heightUnits, units)
+#Width is calculated
+getWidth("canny.jpg", slopes, widthUnits, heightUnits, units)
+# close all open windows
+cv2.destroyAllWindows()
