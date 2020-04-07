@@ -431,7 +431,7 @@ while(height>h or width>w):
 #User enters the height and width and units
 master = tk.Tk()
 tk.Label(master, text="Width").grid(row=0)
-tk.Label(master, text="Length").grid(row=1)
+tk.Label(master, text="Height").grid(row=1)
 tk.Label(master, text="Units").grid(row=2)
 
 e1 = tk.Entry(master)
@@ -458,6 +458,7 @@ units = e3.get()
 cv2.imwrite("resize.jpg", cv2.resize(img, (int(width),int(height))))
 img = cv2.imread("resize.jpg")
 oriImage = img.copy()
+check = False
 
 def mouse_crop(event, x, y, flags, param):
     # grab references to the global variables
@@ -486,6 +487,7 @@ def mouse_crop(event, x, y, flags, param):
             roi = oriImage[refPoint[0][1]:refPoint[1][1], refPoint[0][0]:refPoint[1][0]]
             cv2.imshow("Cropped", roi)
             cv2.imwrite("cropped.jpg", roi)
+            check = True
  
 cv2.namedWindow("image")
 cv2.setMouseCallback("image", mouse_crop)
@@ -499,6 +501,8 @@ while done == False:
         cv2.imshow("image", i)
     k = cv2.waitKey(1)
     if k == esc_keycode:
+        if check == False:
+            cv2.imwrite("cropped.jpg", oriImage)
         break
 
 #Image is transformed into a binary image
