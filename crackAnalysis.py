@@ -499,6 +499,7 @@ while done == False:
     elif cropping:
         cv2.rectangle(i, (x_start, y_start), (x_end, y_end), (255, 0, 0), 2)
         cv2.imshow("image", i)
+        check = True
     k = cv2.waitKey(1)
     if k == esc_keycode:
         if check == False:
