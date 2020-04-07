@@ -25,8 +25,8 @@ def binary1(img):
     img = cv2.medianBlur(img,5)
     th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
                 cv2.THRESH_BINARY,11,2)
-    cv2.imwrite("binary1.jpg", th3)
-    cv2.imshow("Binary1",th3)
+    cv2.imwrite("binary.jpg", th3)
+    cv2.imshow("Binary",th3)
     cv2.waitKey(0)
 
 #Applies median filtering to get rid of noise
@@ -102,8 +102,9 @@ def getLength(img,wU,hU,units):
     w = wU/width
     h = hU/height
     #Array created that will contain all endpoints of the cracks
-    endpoints = [[]]
+    endpoints = []
     split = [[]]
+    circle = []
 
     for y in range(0,height):
         for x in range(0,width):
@@ -128,6 +129,8 @@ def getLength(img,wU,hU,units):
                     #If there are exactly two pixels in count, the selected pixel is in the middle of the cracking
                     if count==2:
                         image[y,x]=[0,255,0]
+                        if len(circle) == 0:
+                            circle.append([x,y])
                     #If there is exactly one pixel in count, the selected pixel is an endpoint and added to the endpoint array
                     if count==1:
                         image[y,x]=[0,0,255]
@@ -137,9 +140,11 @@ def getLength(img,wU,hU,units):
                     image[y,x]=[0,0,255]
                     endpoints.append([x,y])
 
-    endpoints.remove([])
     intersection = [[]]
     slopes = []
+    if len(endpoints) == 0:
+        endpoints.append(circle[0][0],circle[0][1])
+        image[circle[0][1],circle[0][0]]=[0,0,255]
     #l is the variable to keep track of the length
     l = 0.0
     f= open("output.txt","w+")
@@ -480,6 +485,7 @@ def mouse_crop(event, x, y, flags, param):
         if len(refPoint) == 2: #when two points were found
             roi = oriImage[refPoint[0][1]:refPoint[1][1], refPoint[0][0]:refPoint[1][0]]
             cv2.imshow("Cropped", roi)
+            cv2.imwrite("cropped.jpg", roi)
  
 cv2.namedWindow("image")
 cv2.setMouseCallback("image", mouse_crop)
@@ -496,8 +502,8 @@ while done == False:
         break
 
 #Image is transformed into a binary image
-binary("cropped.jpg")
-#binary1("cropped.jpg")
+#binary("cropped.jpg")
+binary1("cropped.jpg")
 #Uses the Canny Edge Detection to find the edges of the cracking
 canny("binary.jpg")
 #Median Filtering is used to get rid of access points
