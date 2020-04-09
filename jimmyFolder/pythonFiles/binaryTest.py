@@ -31,8 +31,8 @@ def binary1(img):
 
 def binary2(img):
     img = cv2.imread(img,0)
-    img = cv2.medianBlur(img,5)
-    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,115,1)
+    img = cv2.medianBlur(img,7)
+    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,31,2)
     cv2.imwrite("binary2.jpg", th3)
     cv2.imshow("Binary2",th3)
     cv2.waitKey(0)
