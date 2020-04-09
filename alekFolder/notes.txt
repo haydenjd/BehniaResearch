@@ -1,0 +1,16 @@
+Some of the things that would be helpful for you to do are:
+
+Folder one:
+Binary is not getting the cracking as a full line. 
+Look into the binary1 function and gaps_filled function to see if you can fix this.
+
+Folder two:
+Similar to folder one, the gaps in the line need to be fixed.
+Another thing I have noticed with this image is a lot of extra dots in the images but they are not from noise, more the imperfections in the clay.
+See if you can reduce the extra points and fill in the gaps.
+
+Folder three:
+Work to reduce the shadow in the image.
+There should be same stuff online about this.
+
+Notes that there are a bunch of images found in the images folder. Feel free to test those on any functions or code you have updated.
