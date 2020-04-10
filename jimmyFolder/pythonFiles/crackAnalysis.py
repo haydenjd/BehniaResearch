@@ -13,18 +13,19 @@ import tkinter.filedialog
 from tkinter.filedialog import askopenfilename
 
 #Makes each pixel of the image black or white
-def binary(img):
-    im_gray = cv2.imread(img, cv2.IMREAD_GRAYSCALE)
-    (thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    cv2.imwrite("binary.jpg", im_bw)
-    cv2.imshow("Binary", im_bw)
-    cv2.waitKey(0)
-
 def binary1(img):
     img = cv2.imread(img,0)
     img = cv2.medianBlur(img,7)
-    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
-                cv2.THRESH_BINARY,27,2)
+    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,27,2)
+    cv2.imwrite("binary.jpg", th3)
+    cv2.imshow("Binary",th3)
+    cv2.waitKey(0)
+
+def binary2(img):
+    img = cv2.imread(img,0)
+    img = cv2.medianBlur(img,5)
+    #th = cv2.adaptiveThreshold(grayscaled, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 115, 1)
+    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
     cv2.imwrite("binary.jpg", th3)
     cv2.imshow("Binary",th3)
     cv2.waitKey(0)
@@ -300,7 +301,7 @@ def getWidth(canny1,slopes,wU,hU,units):
         #Slope is used to extend the length until it reaches the edges of the cracking
         while check:
             #Checks to see if slope causes the width to go out of bounds
-            if y-(counter*slopeY) >= width or y+(counter*slopeY) >= width or y-(counter*slopeY) < 0 or y+(counter*slopeY) < 0 or x-(counter*slopeX) >= height or x+(counter*slopeX) >= height or x-(counter*slopeX) < 0 or x+(counter*slopeX) < 0:
+            if y-(counter*slopeY) >= width or y+(counter*slopeY) >= width or y-(counter*slopeY) < 0 or y+(counter*slopeY) < 0 or x-(counter*slopeX) >= width or x+(counter*slopeX) >= width or x-(counter*slopeX) < 0 or x+(counter*slopeX) < 0:
                 #print("Out of bounds")
                 break
             #Slope is used to add to the width
@@ -507,8 +508,7 @@ while done == False:
         break
 
 #Image is transformed into a binary image
-#binary("cropped.jpg")
-binary1("cropped.jpg")
+binary2("cropped.jpg")
 #Uses the Canny Edge Detection to find the edges of the cracking
 canny("binary.jpg")
 #Median Filtering is used to get rid of access points

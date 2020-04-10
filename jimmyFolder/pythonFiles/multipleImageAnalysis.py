@@ -22,6 +22,13 @@ def binary1(img):
                 cv2.THRESH_BINARY,27,2)
     cv2.imwrite("binary.jpg", th3)
 
+def binary2(img):
+    img = cv2.imread(img,0)
+    img = cv2.medianBlur(img,5)
+    #th = cv2.adaptiveThreshold(grayscaled, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 115, 1)
+    th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+    cv2.imwrite("binary.jpg", th3)
+
 #Applies median filtering to get rid of noise
 def median(img1):
     img = cv2.imread(img1)
@@ -512,8 +519,8 @@ for file in files:
         roi = oriImage[refPoint[0][1]:refPoint[1][1], refPoint[0][0]:refPoint[1][0]]
         cv2.imwrite("cropped.jpg", roi)
     #Image is transformed into a binary image
-    #binary("cropped.jpg")
-    binary1("cropped.jpg")
+    binary2("cropped.jpg")
+    #binary1("cropped.jpg")
     #Uses the Canny Edge Detection to find the edges of the cracking
     canny("binary.jpg")
     #Median Filtering is used to get rid of access points
